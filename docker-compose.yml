@@ -1,23 +1,43 @@
-version: '3.2'
+version: "3"
+
 services:
-  sonarqube:
-    build:
-      context: sonarqube/
+  database:
+    container_name: database
+    image: mysql/mysql-server:8.0
+    restart: unless-stopped
     ports:
-      - 9000:9000
-      - 9092:9092
-    container_name: sonarqube
-  jenkins:
-    build:
-      context: jenkins/
-    privileged: true
-    user: root
-    ports:
-      - 8080:8080
-      - 50000:50000
-    container_name: jenkins
+     - 3307:3307
+    environment:
+     - MYSQL_ROOT_PASSWORD=0000
+     - MYSQL_DATABASE=achatdb
+     - MYSQL_USER=root
+     - MYSQL_PASSWORD=0000
     volumes:
-      - /tmp/jenkins:/var/jenkins_home #Remember that, the tmp directory is designed to be wiped on system reboot.
-      - /var/run/docker.sock:/var/run/docker.sock
+     - db:/var/lib/mysql
+     
+  spring_app:
+    image: rymbsj/achatapp:73
+    container_name: achatspring
+    restart: on-failure
+    environment:
+     - spring.datasource.url=jdbc:mysql://database:3307/achatdb?createDatabaseIfNotExist=true&useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC,
+     - spring.datasource.username = root,
+     - spring.datasource.password = 0000
+    ports:
+     - 8089:8089
     depends_on:
-      - sonarqube
+     - database
+
+     
+  angular_app:
+   image: rymbsj/crudtutofront:rk1
+   container_name: achatangular
+   restart: on-failure
+   ports:
+    - 4200:80
+   depends_on:
+    - spring_app
+       
+volumes:
+  db:
+    
